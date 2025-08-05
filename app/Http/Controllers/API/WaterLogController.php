@@ -2,71 +2,85 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Http\Request;
+use App\Models\WaterLog;
 
 class WaterLogController extends Controller
 {
-    public function register(Request $request)
+    public function index(Request $request)
     {
-        $fields = $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|string|email|unique:users,email',
-            'password' => 'required|string|confirmed'
+        $user = $request->user();
+
+        $logs = WaterLog::query()
+            ->where('user_id', $user->id)
+            ->whereDate('logged_at', today())
+            ->orderByDesc('logged_at')
+            ->get();
+
+        return response()->json($logs);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'amount' => ['required', 'integer', 'min:1'],
+            'logged_at' => ['nullable', 'date'],
         ]);
 
-        $user = User::create([
-            'name' => $fields['name'],
-            'email' => $fields['email'],
-            'password' => bcrypt($fields['password']),
+        $log = WaterLog::create([
+            'user_id' => $request->user()->id,
+            'amount' => $validated['amount'],
+            'logged_at' => $validated['logged_at'] ?? now(),
         ]);
-
-        $token = $user->createToken('mobileapp')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'message' => 'Log berhasil ditambahkan!',
+            'log' => $log,
         ]);
     }
 
-    public function login(Request $request)
+    public function destroy($id, Request $request)
     {
-        $fields = $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string'
-        ]);
+        $log = WaterLog::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
-        $user = User::where('email', $fields['email'])->first();
+        $log->delete();
 
-        if (!$user || !Hash::check($fields['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
-            ]);
-        }
+        return response()->json(['message' => 'Log berhasil dihapus']);
+    }
 
-        $token = $user->createToken('mobileapp')->plainTextToken;
+    public function todayTotal(Request $request)
+    {
+        $user = $request->user();
+
+        $total = Waterlog::where('user_id', $user->id)
+            ->whereDate('logged_at', now()->toDateString())
+            ->sum('amount');
 
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'date' => now()->toDateString(),
+            'total_consumption_ml' => $total
         ]);
     }
 
-    public function logout(Request $request)
+    public function todayProgress(Request $request)
     {
-        $request->user()->tokens()->delete();
+        $user = $request->user();
+
+        $total = Waterlog::where('user_id', $user->id)
+            ->whereDate('logged_at', now()->toDateString())
+            ->sum('amount');
+
+        $target = $user->daily_target;
+        $percentage = $target > 0 ? round(($total / $target) * 100, 2) : 0;
 
         return response()->json([
-            'message' => 'Logged out'
+            'date' => now()->toDateString(),
+            'total_consumption_ml' => $total,
+            'daily_target_ml' => $target,
+            'progress_percentage' => $percentage // e.g., 65.50 (%)
         ]);
     }
-
-    public function me(Request $request)
-    {
-        return response()->json($request->user());
-    }
-    //
 }
