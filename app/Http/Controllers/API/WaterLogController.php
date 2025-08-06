@@ -83,4 +83,15 @@ class WaterLogController extends Controller
             'progress_percentage' => $percentage // e.g., 65.50 (%)
         ]);
     }
+
+    public function getAllLogs(Request $request)
+    {
+        $user = $request->user();
+
+        $logs = WaterLog::where('user_id', $user->id)
+            ->orderByDesc('logged_at')
+            ->get();
+
+        return response()->json($logs);
+    }
 }

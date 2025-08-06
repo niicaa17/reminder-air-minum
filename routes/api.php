@@ -17,5 +17,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/waterlogs/today/total', [WaterlogController::class, 'todayTotal']);
     Route::get('/waterlogs/today/progress', [WaterlogController::class, 'todayProgress']);
     Route::put('/profile/daily-target', [ProfileController::class, 'updateTarget']);
+    Route::get('/waterlogs/all', [WaterlogController::class, 'getAllLogs']);
 
 });

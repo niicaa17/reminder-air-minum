@@ -35,7 +35,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function login(Request $request)
+public function login(Request $request)
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
@@ -46,11 +46,11 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
         return response()->json([
             'message' => 'Login success',
+            "name" => $user->name,
             'access_token' => $token,
             'token_type' => 'Bearer'
         ]);
     }
-
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
