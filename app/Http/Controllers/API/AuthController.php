@@ -35,11 +35,11 @@ class AuthController extends Controller
         ]);
     }
 
-public function login(Request $request)
+    public function login(Request $request)
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Unauthorized'
+                'message' => 'ada yang salah dengan email atau password anda'
             ], 401);
         }
         $user = User::where('email', $request->email)->firstOrFail();
@@ -51,6 +51,7 @@ public function login(Request $request)
             'token_type' => 'Bearer'
         ]);
     }
+
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();

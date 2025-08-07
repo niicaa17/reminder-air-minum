@@ -94,4 +94,24 @@ class WaterLogController extends Controller
 
         return response()->json($logs);
     }
+
+    public function editLog($id, Request $request)
+    {
+        $log = WaterLog::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        $validated = $request->validate([
+            'amount' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $log->update([
+            'amount' => $validated['amount'],
+        ]);
+
+        return response()->json([
+            'message' => 'Log berhasil diupdate!',
+            'log' => $log,
+        ]);
+    }
 }
